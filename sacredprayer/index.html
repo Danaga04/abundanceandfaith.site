@@ -281,78 +281,7 @@
 </div>
 
 
-<!-- ===== OFFER SECTION (elementos do arquivo 1: price + congratulations + countdown) ===== -->
-<div class="offer-section">
-<div id="esconder">
-    <div class="container">
 
-        <div class="price-old">
-            In 1 hour: <span>$97</span>
-        </div>
-
-        <div class="price-new">
-            Just now: <span>$27 One Time</span>
-        </div>
-
-        <div class="special-text">
-            <strong>Congratulations, you are our 7,000th customer—you’ve earned access to a special price: 89% off!</strong><br>
-            You’ll receive a sacred bracelet and a letter signed by Pope, but hurry—this offer is valid for only 12 minutes.<br>
-            Click the green button above before it disappears.
-        </div>
-
-<br>
-
-
-        <div class="payments">
-            <img src="https://i.postimg.cc/44z0dTZR/gdegbo6498420.png" alt="payments">
-        </div>
-
-        <div class="secure">
-            🔒 Your information is safe and secure. The entire transaction will take place on a secure server using SSL technology.
-        </div>
-
-    </div>
-
-    <div class="countdown-bar">
-        <h1><strong>Get The Solomon's Secret Code</strong> Before We Close Our Doors</h1>
-        
-        <div class="countdown-box">
-            <div class="time">
-                <span id="minutes">59</span>
-                <div class="label">Minutes</div>
-            </div>
-            <div class="time">
-                <span id="seconds">59</span>
-                <div class="label">Seconds</div>
-            </div>
-        </div>
-    </div>
-
-</div>
-
-
-
-
-<!-- SCRIPT COUNTDOWN -->
-<script>
-let totalSeconds = (59 * 60) + 59;
-
-function updateCountdown() {
-    let minutes = Math.floor(totalSeconds / 60);
-    let seconds = totalSeconds % 60;
-
-    document.getElementById("minutes").textContent = minutes;
-    document.getElementById("seconds").textContent = seconds < 10 ? "0" + seconds : seconds;
-
-    if (totalSeconds > 0) {
-        totalSeconds--;
-    }
-}
-
-setInterval(updateCountdown, 1000);
-</script>
-</div>
-<!-- ===== END OFFER SECTION ===== -->
 
 
 <style>
