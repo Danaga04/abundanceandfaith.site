@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="theme-color" content="#07102f" />
+  <title>Sensitiva — Your 2026 Message</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      background: #07102f;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #fff;
+    }
+
+    body {
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .page {
+      width: 100%;
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 30px 18px 46px;
+      text-align: center;
+    }
+
+    .brand {
+      color: #ff2692;
+      font-size: clamp(18px, 5vw, 23px);
+      font-weight: 900;
+      letter-spacing: 2px;
+      margin-bottom: 28px;
+      text-transform: uppercase;
+      text-shadow: 0 0 12px rgba(255, 38, 146, .35);
+    }
+
+    .brand::before {
+      content: "☾ ";
+      font-size: .9em;
+    }
+
+    .brand::after {
+      content: " ★";
+      font-size: .8em;
+    }
+
+    h1 {
+      margin: 0 auto 18px;
+      max-width: 510px;
+      color: #ff2692;
+      font-size: clamp(29px, 8vw, 43px);
+      line-height: 1.08;
+      font-weight: 900;
+      text-shadow: 0 0 14px rgba(255, 38, 146, .3);
+    }
+
+    .intro {
+      margin: 0 auto 22px;
+      font-size: clamp(16px, 4.5vw, 20px);
+      line-height: 1.45;
+      color: #f7f7f7;
+    }
+
+    .counter {
+      display: inline-block;
+      width: 100%;
+      max-width: 480px;
+      padding: 13px 16px;
+      margin-bottom: 28px;
+      border: 1px solid rgba(255,255,255,.24);
+      border-radius: 28px;
+      color: #fff;
+      font-size: clamp(12px, 3.3vw, 15px);
+      font-weight: 900;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      background: rgba(10, 19, 55, .55);
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 12px;
+      justify-content: center;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    /* Four cards on the first row, three perfectly centered on the second row. */
+    .card-slot:nth-child(1),
+    .card-slot:nth-child(2),
+    .card-slot:nth-child(3),
+    .card-slot:nth-child(4) {
+      grid-column: span 3;
+    }
+
+    .card-slot:nth-child(5) {
+      grid-column: 2 / span 3;
+      margin-left: 0;
+    }
+
+    .card-slot:nth-child(6) {
+      grid-column: 5 / span 3;
+    }
+
+    .card-slot:nth-child(7) {
+      grid-column: 8 / span 3;
+    }
+
+    .card-slot {
+      position: relative;
+      aspect-ratio: 0.625;
+      min-width: 0;
+      cursor: pointer;
+      perspective: 1000px;
+      outline: none;
+    }
+
+    .card {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform .75s cubic-bezier(.2,.75,.2,1);
+    }
+
+    .card-slot.revealed .card {
+      transform: rotateY(180deg);
+    }
+
+    .card-face {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      border-radius: 15px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border: 2px solid #ff2692;
+      box-shadow:
+        0 0 7px rgba(255,38,146,.9),
+        0 0 20px rgba(255,38,146,.28);
+      background: #080b1e;
+    }
+
+    .card-face img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    .card-front {
+      transform: rotateY(180deg);
+    }
+
+    .card-slot:not(.revealed):hover .card-face {
+      box-shadow:
+        0 0 10px rgba(255,38,146,1),
+        0 0 28px rgba(255,38,146,.42);
+    }
+
+    .card-slot:focus-visible .card-face {
+      outline: 3px solid #fff;
+      outline-offset: 3px;
+    }
+
+    .message {
+      display: none;
+      margin: 38px auto 0;
+      max-width: 510px;
+      padding: 27px 22px 26px;
+      background: #f8f3ee;
+      color: #07102f;
+      border-radius: 20px;
+      border-top: 3px solid #ff2692;
+      box-shadow:
+        0 0 18px rgba(255,38,146,.45),
+        0 14px 35px rgba(0,0,0,.2);
+      text-align: left;
+      animation: fadeUp .7s ease both;
+    }
+
+    .message.show {
+      display: block;
+    }
+
+    .message-icon {
+      text-align: center;
+      color: #ff2692;
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .message h2 {
+      margin: 0 0 15px;
+      text-align: center;
+      color: #ff2692;
+      font-size: clamp(21px, 6vw, 29px);
+      line-height: 1.15;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .message p {
+      margin: 0 0 15px;
+      font-size: clamp(15px, 4vw, 18px);
+      line-height: 1.55;
+    }
+
+    .message p:last-child {
+      margin-bottom: 0;
+    }
+
+    .highlight {
+      color: #ff2692;
+      font-weight: 900;
+    }
+
+    .cta {
+      display: block;
+      width: 100%;
+      max-width: 450px;
+      margin: 24px auto 0;
+      padding: 18px 22px;
+      border-radius: 40px;
+      border: 2px solid #07102f;
+      background: #d71c79;
+      color: #fff;
+      text-decoration: none;
+      font-size: clamp(15px, 4vw, 18px);
+      font-weight: 900;
+      line-height: 1.2;
+      box-shadow:
+        0 0 0 1px #ff2692,
+        0 0 18px rgba(255,38,146,.75);
+      transition: transform .2s ease, filter .2s ease;
+      cursor: pointer;
+    }
+
+    .cta:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.08);
+    }
+
+    .cta:active {
+      transform: scale(.98);
+    }
+
+    .footer {
+      margin-top: 48px;
+      color: rgba(255,255,255,.32);
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(18px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 430px) {
+      .page {
+        padding: 27px 14px 40px;
+      }
+
+      .cards {
+        gap: 9px;
+      }
+
+      .card-face {
+        border-radius: 12px;
+      }
+
+      .counter {
+        padding: 12px 10px;
+      }
+
+      .message {
+        padding: 24px 18px;
+      }
+    }
+
+    @media (max-width: 340px) {
+      .cards {
+        gap: 7px;
+      }
+
+      .card-face {
+        border-radius: 10px;
+      }
+
+      .message p {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+
+    <div class="brand">SENSITIVA</div>
+
+    <h1>A Powerful Message Wants to Speak to You About Your Year 2026.</h1>
+
+    <p class="intro">
+      These 3 cards will reveal the truth about your year.
+    </p>
+
+    <div class="counter" id="counter">
+      CHOOSE 3 CARDS FOR YOUR COMPLETE MESSAGE
+    </div>
+
+    <section class="cards" id="cards" aria-label="Choose three tarot cards">
+
+      <!-- Card 1 -->
+      <button class="card-slot" type="button" aria-label="Reveal card">
+        <div class="card">
+          <div class="card-face card-back">
+            <img
+              src="https://i.postimg.cc/vBrSv6XR/verso-tarot.jpg"
+              alt="Tarot card back"
+            />
+          </div>
+          <div class="card-face card-front">
+            <img
+              data-card="1"
+              src=""
+              alt="Revealed tarot card"
+            />
+          </div>
+        </div>
+      </button>
+
+      <!-- Card 2 -->
+      <button class="card-slot" type="button" aria-label="Reveal card">
+        <div class="card">
+          <div class="card-face card-back">
+            <img
+              src="https://i.postimg.cc/vBrSv6XR/verso-tarot.jpg"
+              alt="Tarot card back"
+            />
+          </div>
+          <div class="card-face card-front">
+            <img
+              data-card="2"
+              src=""
+              alt="Revealed tarot card"
+            />
+          </div>
+        </div>
+      </button>
+
+      <!-- Card 3 -->
+      <button class="card-slot" type="button" aria-label="Reveal card">
+        <div class="card">
+          <div class="card-face card-back">
+            <img
+              src="https://i.postimg.cc/vBrSv6XR/verso-tarot.jpg"
+              alt="Tarot card back"
+            />
+          </div>
+          <div class="card-face card-front">
+            <img
+              data-card="3"
+              src=""
+              alt="Revealed tarot card"
+            />
+          </div>
+        </div>
+      </button>
+
+      <!-- Card 4 -->
+      <button class="card-slot" type="button" aria-label="Reveal card">
+        <div class="card">
+          <div class="card-face card-back">
+            <img
+              src="https://i.postimg.cc/vBrSv6XR/verso-tarot.jpg"
+              alt="Tarot card back"
+            />
+          </div>
+          <div class="card-face card-front">
+            <img data-card="4" src="" alt="Revealed tarot card" />
+          </div>
+        </div>
+      </button>
+
+      <!-- Card 5 -->
+      <button class="card-slot" type="button" aria-label="Reveal card">
+        <div class="card">
+          <div class="card-face card-back">
+            <img
+              src="https://i.postimg.cc/vBrSv6XR/verso-tarot.jpg"
+              alt="Tarot card back"
+            />
+          </div>
+          <div class="card-face card-front">
+            <img data-card="5" src="" alt="Revealed tarot card" />
+          </div>
+        </div>
+      </button>
+
+      <!-- Card 6 -->
+      <button class="card-slot" type="button" aria-label="Reveal card">
+        <div class="card">
+          <div class="card-face card-back">
+            <img
+              src="https://i.postimg.cc/vBrSv6XR/verso-tarot.jpg"
+              alt="Tarot card back"
+            />
+          </div>
+          <div class="card-face card-front">
+            <img data-card="6" src="" alt="Revealed tarot card" />
+          </div>
+        </div>
+      </button>
+
+      <!-- Card 7 -->
+      <button class="card-slot" type="button" aria-label="Reveal card">
+        <div class="card">
+          <div class="card-face card-back">
+            <img
+              src="https://i.postimg.cc/vBrSv6XR/verso-tarot.jpg"
+              alt="Tarot card back"
+            />
+          </div>
+          <div class="card-face card-front">
+            <img data-card="7" src="" alt="Revealed tarot card" />
+          </div>
+        </div>
+      </button>
+
+    </section>
+
+    <section class="message" id="message" aria-live="polite">
+      <div class="message-icon">✦</div>
+
+      <h2>Your Message Has Been Revealed</h2>
+
+      <p>
+        <span class="highlight">The three cards you chose were not random.</span>
+        Together, they reveal a message about the path opening before you in 2026.
+      </p>
+
+      <p>
+        There is something you are being called to understand before the next chapter
+        of your life begins. Pay close attention to what you felt when you turned
+        each card — your intuition may already know why these three appeared for you.
+      </p>
+
+      <p>
+        <span class="highlight">Your complete personal message is ready.</span>
+        Continue below to discover what the cards are revealing for your year.
+      </p>
+
+      <!-- Replace # below with your final destination URL -->
+      <a class="cta" href="#" id="ctaButton">
+        ✦ REVEAL MY COMPLETE MESSAGE&nbsp; →
+      </a>
+    </section>
+
+    <div class="footer">
+      SENSITIVA — THE VOICE OF TRUTH
+    </div>
+
+  </main>
+
+  <script>
+    /*
+      IMPORTANT LOGIC:
+
+      There are exactly 3 possible card images.
+      Every time the visitor clicks a card, one unused image is randomly assigned.
+      Therefore:
+        - The first revealed card can be any of the 3.
+        - The second revealed card can only be one of the remaining 2.
+        - The third revealed card receives the final unused image.
+        - No card image can ever repeat within the same 3-card reading.
+      The seven visible positions are only "slots"; the actual card identities
+      are assigned dynamically when the visitor chooses them.
+    */
+
+    const CARD_IMAGES = [
+      "https://i.postimg.cc/T3B7McH0/download.jpg",
+      "https://i.postimg.cc/Y9HdjC7r/download.jpg",
+      "https://i.postimg.cc/5NRpL3JZ/download.jpg"
+    ];
+
+    const slots = Array.from(document.querySelectorAll(".card-slot"));
+    const counter = document.getElementById("counter");
+    const message = document.getElementById("message");
+
+    let remainingCards = [...CARD_IMAGES];
+    let revealedCount = 0;
+
+    // Preload all three possible card faces.
+    CARD_IMAGES.forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
+
+    function updateCounter() {
+      const remaining = 3 - revealedCount;
+
+      if (remaining > 0) {
+        counter.textContent =
+          `CHOOSE ${remaining} MORE CARD${remaining === 1 ? "" : "S"} FOR YOUR COMPLETE MESSAGE`;
+      } else {
+        counter.textContent = "YOUR 3 CARDS HAVE BEEN REVEALED";
+      }
+    }
+
+    function revealSlot(slot) {
+      if (slot.classList.contains("revealed") || revealedCount >= 3) {
+        return;
+      }
+
+      // Select one of the still-unused cards at random.
+      const randomIndex = Math.floor(Math.random() * remainingCards.length);
+      const selectedImage = remainingCards.splice(randomIndex, 1)[0];
+
+      const frontImage = slot.querySelector(".card-front img");
+      frontImage.src = selectedImage;
+
+      // Update accessibility text.
+      frontImage.alt = `Revealed tarot card ${revealedCount + 1}`;
+
+      // Mark as revealed and flip.
+      slot.classList.add("revealed");
+      slot.setAttribute("aria-label", "Revealed tarot card");
+
+      revealedCount++;
+      updateCounter();
+
+      // Once exactly 3 cards have been selected, show the message.
+      if (revealedCount === 3) {
+        setTimeout(() => {
+          message.classList.add("show");
+
+          setTimeout(() => {
+            message.scrollIntoView({
+              behavior: "smooth",
+              block: "center"
+            });
+          }, 100);
+        }, 850);
+      }
+    }
+
+    slots.forEach((slot) => {
+      slot.addEventListener("click", () => revealSlot(slot));
+    });
+
+    // Prevent the placeholder CTA from jumping to the top of the page.
+    document.getElementById("ctaButton").addEventListener("click", (event) => {
+      if (event.currentTarget.getAttribute("href") === "#") {
+        event.preventDefault();
+      }
+    });
+
+    updateCounter();
+  </script>
+</body>
+</html>
