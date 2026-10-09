@@ -608,5 +608,150 @@ src="https://www.facebook.com/tr?id=2999048490436756&ev=PageView&noscript=1"
 
   
   
+
+    /*
+     * UTM persistence:
+     * - Captures every utm_* query parameter from the landing URL.
+     * - Persists values in localStorage across pages/visits on this browser.
+     * - Restores missing UTMs to the current URL and appends them to links.
+     * - Existing URL parameters take precedence over stored values.
+     */
+    (function () {
+      "use strict";
+
+      var STORAGE_KEY = "persistent_utm_params_v1";
+      var currentUrl;
+
+      try {
+        currentUrl = new URL(window.location.href);
+      } catch (e) {
+        return;
+      }
+
+      function isUtm(name) {
+        return /^utm_/i.test(name);
+      }
+
+      function readStoredUtms() {
+        try {
+          var stored = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "{}");
+          return stored && typeof stored === "object" ? stored : {};
+        } catch (e) {
+          return {};
+        }
+      }
+
+      function saveUtms(values) {
+        try {
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(values));
+        } catch (e) {
+          // Storage may be disabled by browser/privacy settings.
+        }
+      }
+
+      var saved = readStoredUtms();
+
+      // Save every UTM parameter present on the current URL.
+      currentUrl.searchParams.forEach(function (value, name) {
+        if (isUtm(name) && value !== "") {
+          saved[name] = value;
+        }
+      });
+
+      saveUtms(saved);
+
+      // Restore stored UTMs that are missing from this page's URL.
+      var changed = false;
+      Object.keys(saved).forEach(function (name) {
+        if (isUtm(name) && !currentUrl.searchParams.has(name)) {
+          currentUrl.searchParams.set(name, saved[name]);
+          changed = true;
+        }
+      });
+
+      // Keep the UTMs visible in the address bar without reloading the page.
+      if (changed) {
+        try {
+          window.history.replaceState(
+            window.history.state,
+            "",
+            currentUrl.pathname + currentUrl.search + currentUrl.hash
+          );
+        } catch (e) {
+          // URL restoration may be restricted in unusual browsing contexts.
+        }
+      }
+
+      function appendUtmsToLinks() {
+        var latestStored = readStoredUtms();
+
+        document.querySelectorAll("a[href]").forEach(function (link) {
+          var rawHref = link.getAttribute("href");
+          if (!rawHref || rawHref.charAt(0) === "#" ||
+              /^javascript:/i.test(rawHref) || /^mailto:/i.test(rawHref) ||
+              /^tel:/i.test(rawHref)) {
+            return;
+          }
+
+          try {
+            var destination = new URL(rawHref, window.location.href);
+            if (destination.protocol !== "http:" && destination.protocol !== "https:") {
+              return;
+            }
+
+            var linkChanged = false;
+            Object.keys(latestStored).forEach(function (name) {
+              if (isUtm(name) && !destination.searchParams.has(name)) {
+                destination.searchParams.set(name, latestStored[name]);
+                linkChanged = true;
+              }
+            });
+
+            if (linkChanged) {
+              link.setAttribute("href", destination.href);
+            }
+          } catch (e) {
+            // Ignore invalid or unsupported link URLs.
+          }
+        });
+      }
+
+      function addUtmsToNewLinks() {
+        appendUtmsToLinks();
+
+        // Also cover links inserted dynamically by page scripts.
+        if (window.MutationObserver && document.body) {
+          var observer = new MutationObserver(function (mutations) {
+            mutations.forEach(function (mutation) {
+              mutation.addedNodes.forEach(function (node) {
+                if (node.nodeType !== 1) return;
+                if (node.matches && node.matches("a[href]")) {
+                  appendUtmsToLinks();
+                } else if (node.querySelector && node.querySelector("a[href]")) {
+                  appendUtmsToLinks();
+                }
+              });
+            });
+          });
+          observer.observe(document.body, { childList: true, subtree: true });
+        }
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", addUtmsToNewLinks);
+      } else {
+        addUtmsToNewLinks();
+      }
+
+      // Reapply parameters immediately before a visitor follows a link.
+      document.addEventListener("click", function (event) {
+        var link = event.target && event.target.closest
+          ? event.target.closest("a[href]")
+          : null;
+        if (!link) return;
+        appendUtmsToLinks();
+      }, true);
+    })();
+
 </body>
 </html>
